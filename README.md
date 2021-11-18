@@ -1,4 +1,4 @@
-# cpma
+# CPMA: Cosine-Pruned Medial Axis algorithm
 
 If you find our code or paper useful, please consider citing
 
