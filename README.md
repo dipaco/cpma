@@ -2,6 +2,8 @@
 
 The CPMA, is a method for medial axis pruning with noise robustness and equivariance to isometric transformations. It leverages the Discrete Cosine Transform to create smooth versions of a shape S. We use the smooth shapes to compute a score function F(x, S) that filters out spurious branches from the medial axis of the original shape. Our method generalizes to n-dimensional shapes given the properties of the Discrete Cosine Transform. 
 
+[ [Link to the paper](https://ieeexplore.ieee.org/document/9402852) ]
+
 # Installation
 
 After cloning the repository, you will need to install all the necessary packages. We recommend creating a new conda environment using the `environment.yml` file we provide:
