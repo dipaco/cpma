@@ -19,7 +19,9 @@ python run_2d_test.py
 
 The command should create a new folder named `results`. Inside this folder you will see a comparative figure for every image in the `data` folder. The comparative images should look like this:
 
+![alt text](https://github.com/dipaco/cpma/blob/master/docs/medial_axis_figure_elephant12.png?raw=true)
 
+![alt text](https://github.com/dipaco/cpma/blob/master/docs/medial_axis_figure_fountain06.png?raw=true)
 
 If you find our code or paper useful, please consider citing
 
