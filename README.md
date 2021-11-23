@@ -11,7 +11,9 @@ conda env create -f environment.yml
 conda activate cpma 
 ```
 
-After you install all the dependencies and create the conda environment, you can run the test file as:
+# 2D Tests
+
+After you install all the dependencies and create the conda environment, you can run the 2D test file as:
 
 ```angular2html
 python run_2d_test.py
@@ -20,6 +22,10 @@ python run_2d_test.py
 The command should create a new folder named `results`. Inside this folder you will see a comparative figure for every image in the `data` folder. The comparative images should look like this:
 
 ![alt text](https://github.com/dipaco/cpma/blob/main/docs/medial_axis_figure_elephant12.png?raw=true)
+
+# 3D Tests
+
+COMING SOON!
 
 If you find our code or our paper useful, please consider citing it.
 
