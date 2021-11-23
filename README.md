@@ -23,7 +23,7 @@ The command should create a new folder named `results`. Inside this folder you w
 
 If you find our code or our paper useful, please consider citing it.
 
-    @article{PatioCortes2021CosinePrunedMA,
+    @article{Patino2021CPMA,
         title={Cosine-Pruned Medial Axis: A New Method for Isometric Equivariant and Noise-Free Medial Axis Extraction},
         author={Diego Alberto Pati{\~n}o Cortes and John Willian Branch},
         journal={IEEE Access},
