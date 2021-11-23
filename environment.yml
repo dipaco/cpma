@@ -17,6 +17,7 @@ dependencies:
   - cfitsio=3.470=hf0d0db6_6
   - charls=2.2.0=h2531618_0
   - cloudpickle=2.0.0=pyhd3eb1b0_0
+  - colorama=0.4.4=pyh9f0ad1d_0
   - cycler=0.10.0=py39h06a4308_0
   - cytoolz=0.11.0=py39h27cfd23_0
   - dask-core=2021.10.0=pyhd3eb1b0_0
@@ -110,6 +111,7 @@ dependencies:
   - tk=8.6.11=h1ccaba5_0
   - toolz=0.11.2=pyhd3eb1b0_0
   - tornado=6.1=py39h27cfd23_0
+  - tqdm=4.62.3=pyhd8ed1ab_0
   - tzdata=2021e=hda174b7_0
   - wheel=0.37.0=pyhd3eb1b0_1
   - xorg-libxau=1.0.9=h7f98852_0

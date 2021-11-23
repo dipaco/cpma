@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import multiprocessing as mp
+import time
 from functools import partial
 import scipy
 import sknw
@@ -60,16 +61,33 @@ def cpma(mask, verbose=False, **kwargs):
     if 'pruning' not in kwargs:
         kwargs['pruning'] = 'threshold'
 
+    if 'connect_max_iter' not in kwargs:
+        kwargs['connect_max_iter'] = 50
+
+    if 'tau' not in kwargs:
+        kwargs['tau'] = 0.47
+
+    if 'energy_func' not in kwargs:
+        kwargs['energy_func'] = 'exponential'
+
+    if 'alpha' not in kwargs:
+        kwargs['alpha'] = 10.0
+
     return_scores = kwargs['return_scores']
     enforce_connectivity = kwargs['enforce_connectivity']
     pruning = kwargs['pruning']
+    connect_max_iter = kwargs['connect_max_iter']
+    tau = kwargs['tau']
+    energy_func = kwargs['energy_func']
+    alpha = kwargs['alpha']
+
+    assert energy_func in ['exponential', 'inverse']
 
     if 'num_cpu' not in kwargs:
         kwargs['num_cpu'] = None
 
     num_cpu = kwargs['num_cpu']
 
-    tau = 0.5
     gt_medial_axis, d = medial_axis(mask, return_distance=True)
 
     ct = dct(dct(mask.T, norm='ortho').T, norm='ortho')
@@ -142,56 +160,14 @@ def cpma(mask, verbose=False, **kwargs):
 
     # Enforce connectivity
     if enforce_connectivity:
-        connected_cpma = _compute_connected_medial_axis_2d(cpma, mask, scores)
-
-    if verbose:
-        if enforce_connectivity:
-            plt.imshow(cpma, interpolation=None)
-        else:
-            plt.imshow(connected_cpma, interpolation=None)
-
-        ''''# to zoom the images
-        offset = int(0.5 * (mask.shape[0] - mask.shape[0] / 1.7))
-
-        # plot score function
-        plt.title('Score function')
-        plt.imshow(scores[offset:-offset, offset:-offset], interpolation=None)
-        plt.colorbar()
-
-        # plot results for the CPMA
-        plt.figure()
-        plt.title('Cosine-Pruned Medial Axis (CPMA)')
-        res_cpma = mask.astype(int) + cpma.astype(int)
-        plt.imshow(res_cpma[offset:-offset, offset:-offset], interpolation=None)
-
-        cpma_graph = sknw.build_sknw(cpma[offset:-offset, offset:-offset])
-        node, nodes = cpma_graph.node, cpma_graph.nodes()
-        ps = np.array([node[i]['o'] for i in nodes])
-        plt.plot(ps[:, 1], ps[:, 0], 'r.')
-
-        # plot the medial axis for comparison
-        plt.figure()
-        plt.title('Integer Medial Axis (ground truth)')
-        res_gt_medial_axis = mask.astype(int) + gt_medial_axis.astype(int)
-        plt.imshow(res_gt_medial_axis[offset:-offset, offset:-offset], interpolation=None)
-
-        gt_medial_axis_graph = sknw.build_sknw(gt_medial_axis[offset:-offset, offset:-offset])
-        node, nodes = gt_medial_axis_graph.node, gt_medial_axis_graph.nodes()
-        ps = np.array([node[i]['o'] for i in nodes])
-        plt.plot(ps[:, 1], ps[:, 0], 'r.')
-
-        if enforce_connectivity:
-            plt.figure()
-            plt.title('Cosine-Pruned Medial Axis (CPMA) + connect.')
-            res_connect_cpma = mask.astype(int) + connected_cpma.astype(int)
-            plt.imshow(res_connect_cpma[offset:-offset, offset:-offset], interpolation=None)
-
-            connected_cpma_graph = sknw.build_sknw(connected_cpma[offset:-offset, offset:-offset])
-            node, nodes = connected_cpma_graph.node, connected_cpma_graph.nodes()
-            ps = np.array([node[i]['o'] for i in nodes])
-            plt.plot(ps[:, 1], ps[:, 0], 'r.')'''
-
-        plt.show()
+        connected_cpma = _compute_connected_medial_axis_2d(
+            cpma,
+            mask,
+            scores,
+            max_iter=connect_max_iter,
+            energy_function=energy_func,
+            alpha=alpha,
+        )
 
     if enforce_connectivity:
         cpma = connected_cpma
@@ -202,20 +178,28 @@ def cpma(mask, verbose=False, **kwargs):
         return cpma, d
 
 
-def _compute_connected_medial_axis_2d(cpma, mask, scores):
+def _compute_connected_medial_axis_2d(cpma, mask, scores, max_iter=100, energy_function='exponential', alpha=10.0):
 
     connected_cpma = cpma.copy()
 
-    # build a graph with all the points in the mask of the
-    field = (1.0 - scores) + np.prod(mask.shape) * np.logical_not(mask).astype(int)
+    # build a graph with all the points in the mask
+    # the energy function (field) has small values a point belongs (or it is close) to the medial axis
+    # and large values else where. We make the values arbitrarily large outside the shape.
+    if energy_function == 'inverse':
+        field = 1.0 - scores
+    elif energy_function == 'exponential':
+        field = np.exp(- alpha * scores)
+    else:
+        raise ValueError(f'Invalid energy function type: {energy_function}.')
+
     mask_graph = _build_2d_mask_graph(mask, field)
 
     # build graph from skeleton
     sk_graph = sknw.build_sknw(connected_cpma)
     sk_graph_components = [sk_graph.subgraph(c) for c in nx.connected_components(sk_graph)]
+    sk_graph_components.sort(key=lambda x: len(x.nodes()))
 
-    # Iterates through all the subgraphs and tries to merge them
-    max_iter = 10
+    # Iterates through all the sub-graphs and tries to merge them
     it = 0
     while it < max_iter and len(sk_graph_components) > 1:
 
@@ -253,6 +237,7 @@ def _compute_connected_medial_axis_2d(cpma, mask, scores):
         # Creates the skeleton graph again with the new version of the CPMA
         sk_graph = sknw.build_sknw(connected_cpma)
         sk_graph_components = [sk_graph.subgraph(c) for c in nx.connected_components(sk_graph)]
+        sk_graph_components.sort(key=lambda x: len(x.nodes()))
 
         it += 1
 
@@ -369,7 +354,6 @@ def _connect_two_paths(connected_cpma, mask, mask_graph, graph_i, graph_f):
 def _build_2d_mask_graph(mask, weight_map):
 
     mask_graph = nx.Graph()
-    # The +1 in each coordinates account for the buffer that sknw applies
     all_nodes = [(row * mask.shape[1] + col, row, col) for row, col in zip(*np.where(mask))]
 
     for node in all_nodes:
@@ -384,7 +368,7 @@ def _build_2d_mask_graph(mask, weight_map):
         # deletes the column corresponding to row and col
         ngb = np.delete(ngb, 4, axis=1)
         # deletes all the neighbors that are not inside the object
-        val = np.where(np.logical_not(mask[ngb[0, :], ngb[1, :]]))[0]
+        val = np.where(np.logical_not(mask[(ngb[0, :], ngb[1, :])]))[0]
         ngb = np.delete(ngb, val, axis=1)
 
         # ids of all the neighbors
@@ -392,9 +376,6 @@ def _build_2d_mask_graph(mask, weight_map):
 
         # creates the nodes and edges for each pair of neighbors
         for i in range(ngb.shape[1]):
-            # add the neighbor node
-            mask_graph.add_node(ng_ids[i], cords=(ngb[0, i], ngb[1, i]))
-
             weight = (weight_map[row, col] + weight_map[ngb[0, i], ngb[1, i]]) / 2.0
             mask_graph.add_edge(node_id, ng_ids[i], energy=weight)
 
@@ -531,10 +512,6 @@ def cpma_3d(mask, verbose=False, **kwargs):
     # Enforce connectivity
     if enforce_connectivity:
         cpma = _compute_connected_medial_axis_3d(cpma, mask, scores)
-
-    if verbose:
-        plot_skel_3d(cpma)
-        plt.show()
 
     if return_scores:
         return cpma, d, scores
