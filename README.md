@@ -31,11 +31,13 @@ COMING SOON!
 
 If you find our code or our paper useful, please consider citing it.
 
-    @article{Patino2021CPMA,
-        title={Cosine-Pruned Medial Axis: A New Method for Isometric Equivariant and Noise-Free Medial Axis Extraction},
-        author={Diego Alberto Pati{\~n}o Cortes and John Willian Branch},
-        journal={IEEE Access},
-        year={2021},
-        volume={9},
-        pages={65466-65481}
-    }
+```bibtex
+@article{Patino2021CPMA,
+    title={Cosine-Pruned Medial Axis: A New Method for Isometric Equivariant and Noise-Free Medial Axis Extraction},
+    author={Diego Alberto Patiño Cortes and John Willian Branch},
+    journal={IEEE Access},
+    year={2021},
+    volume={9},
+    pages={65466-65481}
+}
+```
